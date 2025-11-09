@@ -1,70 +1,45 @@
-"use strict"
+"use strict";
 
-let aimLn      = document.getElementById("aimLines");
-let aimC1      = document.getElementById("aimCircle1");
-let aimC2      = document.getElementById("aimCircle2");
-let portal     = document.getElementById('mask-circle');
+const aimLn = document.getElementById("aimLines");
+const aimC1 = document.getElementById("aimCircle1");
+const aimC2 = document.getElementById("aimCircle2");
+const portal = document.getElementById("mask-circle");
 
-let portalRadius = parseInt(/(\d*)/g.exec(portal.getAttribute("r")));
-let previousXposition = 0;
-let aimRotate1 = 0;
-let aimRotate2 = 0;
-let jumpFlag = 0;
+let portalRadius = 15;
+let previousX = 0;
+let rot1 = 0;
+let rot2 = 0;
+let isExpanded = false;
 
-document.getElementById('vid1').addEventListener('loadedmetadata', function(){
-  this.currentTime = 127;
-  this.play();
-  }, false)
-  
-window.addEventListener('mousemove', function(e) {
-  portal.setAttribute("cx", e.pageX);
-  portal.setAttribute("cy", e.pageY);
+window.addEventListener("mousemove", (e) => {
+  const { pageX, pageY } = e;
+  portal.setAttribute("cx", pageX);
+  portal.setAttribute("cy", pageY);
 
-  aimLn.setAttribute("transform", "translate("+e.pageX+" "+e.pageY+")");
+  aimLn.setAttribute("transform", `translate(${pageX} ${pageY})`);
 
-  if (previousXposition < e.pageX) { aimRotate1++; aimRotate2--; }
-                              else { aimRotate1--; aimRotate2++; }
+  if (pageX > previousX) { rot1++; rot2--; } else { rot1--; rot2++; }
 
-  aimC1.setAttribute("cx", e.pageX); aimC1.setAttribute("cy", e.pageY);
-  aimC1.setAttribute("transform", 
-                     "rotate("+aimRotate1+" "+e.pageX+" "+e.pageY+")");
+  [aimC1, aimC2].forEach((c, i) => {
+    c.setAttribute("cx", pageX);
+    c.setAttribute("cy", pageY);
+    const rot = i === 0 ? rot1 : rot2;
+    c.setAttribute("transform", `rotate(${rot} ${pageX} ${pageY})`);
+  });
 
-  aimC2.setAttribute("cx", e.pageX); aimC2.setAttribute("cy", e.pageY);
-  aimC2.setAttribute("transform", 
-                     "rotate("+aimRotate2+" "+e.pageX+" "+e.pageY+")");
+  previousX = pageX;
+});
 
-  previousXposition = e.pageX;
-}, false)
-
-let portalJump = function() {
-    portalRadius++;
-    portal.setAttribute("r", portalRadius + "%");
-    if (portalRadius < 100) { setTimeout(portalJump) }
-  }
-
-let portalBackJump = function() {
-    portalRadius--;
-    portal.setAttribute("r", portalRadius + "%");
-    if (portalRadius > 15) { setTimeout(portalBackJump, 1) }
-  }
-
-document.onclick = function(e) {
-  if (jumpFlag == 0) {
-    portalJump();
-    jumpFlag = 1;
-  } else {
-    portalBackJump();
-    jumpFlag = 0;
+function animatePortal(target, step = 1) {
+  if ((target > portalRadius && portalRadius < target) ||
+      (target < portalRadius && portalRadius > target)) {
+    portalRadius += target > portalRadius ? step : -step;
+    portal.setAttribute("r", `${portalRadius}%`);
+    requestAnimationFrame(() => animatePortal(target, step));
   }
 }
 
-
-
-
-
-
-
-
-
-
-
+document.addEventListener("click", () => {
+  isExpanded = !isExpanded;
+  animatePortal(isExpanded ? 100 : 15, 1);
+});
